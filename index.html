@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pragun's Universe - Interactive Portfolio</title>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Space Mono', monospace;
+            overflow: hidden;
+            background: #000;
+            color: white;
+        }
+        
+        h1, h2, h3, h4, .font-orbitron {
+            font-family: 'Orbitron', sans-serif !important;
+        }
+        
+        p, span, div, .font-mono {
+            font-family: 'Space Mono', monospace !important;
+        }
+        
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        
+        .ui-overlay {
+            position: fixed;
+            pointer-events: none;
+            z-index: 40;
+            transition: opacity 0.5s ease;
+        }
+        
+        .ui-overlay * {
+            pointer-events: auto;
+        }
+        
+        .glow-text {
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8),
+                         0 0 20px rgba(59, 130, 246, 0.6),
+                         0 0 30px rgba(59, 130, 246, 0.4);
+        }
+        
+        .planet-label {
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .planet-label.visible {
+            opacity: 1;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulsing {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .glass {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Themed sections for achievements */
+        .achievement-card {
+            background: var(--theme-gradient);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .achievement-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.1);
+            pointer-events: none;
+        }
+
+        .modal-close-btn {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 1000;
+            width: 3.5rem;
+            height: 3.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            pointer-events: auto !important;
+        }
+
+        .modal-close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg) scale(1.1);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Restore Galaxy Background */
+        #galaxy-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: black;
+        }
+    </style>
+    
+    <!-- GSAP for smooth animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+</head>
+<body>
+    
+    <!-- Galaxy Background -->
+    <div id="galaxy-bg"></div>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+    
+    <!-- Canvas Container -->
+    <div id="canvas-container"></div>
+    
+    <!-- Loading Screen -->
+    <div id="loading" class="fixed inset-0 bg-black flex items-center justify-center z-50 transition-opacity duration-1000">
+        <div class="text-center max-w-md px-6">
+            <h1 class="text-4xl md:text-5xl font-black text-white tracking-widest mb-2" style="font-family: 'Orbitron', sans-serif;">PRAGUN BHANDARI</h1>
+            <div class="h-[1px] w-full bg-gradient-to-r from-transparent via-white/50 to-transparent mb-8"></div>
+            <p class="text-xs text-gray-400 uppercase tracking-[0.3em] mb-12">System Initialization</p>
+            
+            <div class="relative w-full h-[2px] bg-white/10 rounded-full overflow-hidden mb-4">
+                <div id="loadingBar" class="absolute h-full bg-white transition-all duration-300" style="width: 0%"></div>
+            </div>
+            
+            <div class="flex justify-between items-center px-1">
+                <span id="loadingPercent" class="text-[10px] text-gray-500 font-mono italic">0%</span>
+                <span class="text-[10px] text-gray-500 font-mono animate-pulse uppercase tracking-wider">Syncing Environment...</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- UI Overlay -->
+    <div class="ui-overlay inset-0">
+        <!-- Top Bar -->
+        <div class="absolute top-0 left-0 right-0 p-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-white glow-text">PRAGUN BHANDARI</h1>
+                    <p class="text-sm text-gray-400">Computer Engineer & ML/AI Enthusiast</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="hidden md:block glass px-4 py-2 rounded-lg">
+                        <p class="text-xs text-gray-400">🌌 Click planets to explore</p>
+                    </div>
+                    <div class="glass px-4 py-3 rounded-lg flex items-center gap-4">
+                        <a href="https://github.com/BPragun" target="_blank" class="text-white hover:text-blue-400 transition-colors" title="GitHub">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                        </a>
+                        <a href="mailto:001nugarpking@gmail.com" class="text-white hover:text-blue-400 transition-colors" title="Email">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </a>
+                        <a href="https://pragunbhandari.com.np" target="_blank" class="text-white hover:text-blue-400 transition-colors" title="Website">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Instructions -->
+        <div class="absolute bottom-6 left-6 glass px-5 py-3 rounded-lg">
+            <h3 class="text-xs font-bold text-blue-400 mb-2">NAVIGATION</h3>
+            <div class="text-xs text-gray-300 space-y-1">
+                <p>Drag • Scroll • Click</p>
+                <p class="text-gray-500">ESC to close • SPACE to reset</p>
+            </div>
+        </div>
+        
+        <!-- Planet Info -->
+        <div id="planetInfo" class="absolute bottom-6 right-6 glass px-5 py-3 rounded-lg max-w-xs hidden">
+            <h3 class="text-sm font-bold text-white mb-1" id="planetName">Planet Name</h3>
+            <p class="text-xs text-gray-400" id="planetDesc">Hover over a planet to see details</p>
+        </div>
+    </div>
+    
+    <!-- Planet Detail Modal -->
+    <div id="modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-6 bg-black/80 backdrop-blur-xl">
+        <button onclick="closeModal()" class="modal-close-btn">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+        <div id="modalCard" class="relative rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto glass shadow-[0_0_50px_rgba(0,0,0,0.5)] transform transition-all duration-500 scale-95 opacity-0">
+            <div id="modalContent" class="p-8 md:p-12">
+                <!-- Content will be injected here -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Three.js Scene Setup
+        let scene, camera, renderer, controls;
+        let sun, planets = [], stars;
+        let raycaster, mouse;
+        let selectedPlanet = null;
+        let shootingStars = [];
+        let spaceDust;
+        
+        // Planet Data
+        const planetData = {
+            sun: {
+                name: '☀️ PRAGUN BHANDARI',
+                color: 0xffa500,
+                size: 8,
+                desc: 'Computer Engineer & ML/AI Enthusiast',
+                theme: 'linear-gradient(135deg, #FFA500 0%, #FF6B00 100%)',
+                content: `
+                    <div class="text-center mb-8">
+                        <div class="text-8xl mb-4 animate-pulse">☀️</div>
+                        <h2 class="text-5xl font-bold text-yellow-400 mb-2">PRAGUN BHANDARI</h2>
+                        <p class="text-xl text-yellow-200">Computer Engineer & ML/AI Enthusiast</p>
+                    </div>
+                    <div class="glass border-white/10 rounded-2xl p-6 mb-6">
+                        <p class="text-gray-200 text-lg mb-4 leading-relaxed font-mono">Hi! I'm Pragun Bhandari, a passionate Machine Learning Engineer based in Kathmandu, Nepal.</p>
+                        <p class="text-gray-200 text-lg leading-relaxed font-mono">I build intelligent systems that solve real-world problems, from computer vision applications to interactive web experiences. My work bridges the gap between AI and reality.</p>
+                    </div>
+                    <div class="grid grid-cols-3 gap-6">
+                        <div class="achievement-card rounded-xl p-6 text-center transform hover:scale-105 transition shadow-lg">
+                            <div class="text-5xl font-bold text-white mb-2">15+</div>
+                            <div class="text-white/80 font-bold uppercase tracking-wider text-xs">Projects</div>
+                        </div>
+                        <div class="achievement-card rounded-xl p-6 text-center transform hover:scale-105 transition shadow-lg">
+                            <div class="text-5xl font-bold text-white mb-2">3+</div>
+                            <div class="text-white/80 font-bold uppercase tracking-wider text-xs">Years</div>
+                        </div>
+                        <div class="achievement-card rounded-xl p-6 text-center transform hover:scale-105 transition shadow-lg">
+                            <div class="text-5xl font-bold text-white mb-2">10+</div>
+                            <div class="text-white/80 font-bold uppercase tracking-wider text-xs">Skills</div>
+                        </div>
+                    </div>
+                `
+            },
+            mercury: {
+                name: '🔴 PYTHON',
+                color: 0xff4444,
+                size: 1.5,
+                orbit: 15,
+                speed: 0.02,
+                desc: 'Expert Python Developer',
+                theme: 'linear-gradient(135deg, #FF4444 0%, #CC0000 100%)',
+                content: `
+                    <div class="text-center mb-8">
+                        <div class="text-7xl mb-4">🐍</div>
+                        <h2 class="text-4xl font-bold text-red-400 mb-2">PYTHON MASTERY</h2>
+                        <p class="text-red-200">My primary language for ML, backend & automation</p>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div class="achievement-card rounded-xl p-6 shadow-xl">
+                            <h3 class="text-xl font-bold text-white mb-4">🧠 Machine Learning</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-white font-semibold">TensorFlow</span>
+                                        <span class="text-white font-bold">90%</span>
+                                    </div>
+                                    <div class="w-full bg-black/20 rounded-full h-3">
+                                        <div class="bg-white h-3 rounded-full shadow-[0_0_10px_white]" style="width: 90%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-white font-semibold">PyTorch</span>
+                                        <span class="text-white font-bold">85%</span>
+                                    </div>
+                                    <div class="w-full bg-black/20 rounded-full h-3">
+                                        <div class="bg-white h-3 rounded-full shadow-[0_0_10px_white]" style="width: 85%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-white font-semibold">Scikit-learn</span>
+                                        <span class="text-white font-bold">88%</span>
+                                    </div>
+                                    <div class="w-full bg-black/20 rounded-full h-3">
+                                        <div class="bg-white h-3 rounded-full shadow-[0_0_10px_white]" style="width: 88%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="achievement-card rounded-xl p-6 shadow-xl">
+                            <h3 class="text-xl font-bold text-white mb-4">🌐 Web Frameworks</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-white font-semibold">Django</span>
+                                        <span class="text-white font-bold">82%</span>
+                                    </div>
+                                    <div class="w-full bg-black/20 rounded-full h-3">
+                                        <div class="bg-white h-3 rounded-full shadow-[0_0_10px_white]" style="width: 82%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-white font-semibold">Flask</span>
+                                        <span class="text-white font-bold">80%</span>
+                                    </div>
+                                    <div class="w-full bg-black/20 rounded-full h-3">
+                                        <div class="bg-white h-3 rounded-full shadow-[0_0_10px_white]" style="width: 80%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-white font-semibold">FastAPI</span>
+                                        <span class="text-white font-bold">75%</span>
+                                    </div>
+                                    <div class="w-full bg-black/20 rounded-full h-3">
+                                        <div class="bg-white h-3 rounded-full shadow-[0_0_10px_white]" style="width: 75%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-black/30 rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-3">🔧 Key Libraries & Tools</h3>
+                        <div class="flex flex-wrap gap-3">
+                            <span class="px-4 py-2 bg-red-600/30 text-red-200 rounded-lg font-semibold">NumPy</span>
+                            <span class="px-4 py-2 bg-red-600/30 text-red-200 rounded-lg font-semibold">Pandas</span>
+                            <span class="px-4 py-2 bg-red-600/30 text-red-200 rounded-lg font-semibold">Matplotlib</span>
+                            <span class="px-4 py-2 bg-red-600/30 text-red-200 rounded-lg font-semibold">OpenCV</span>
+                            <span class="px-4 py-2 bg-red-600/30 text-red-200 rounded-lg font-semibold">Keras</span>
+                            <span class="px-4 py-2 bg-red-600/30 text-red-200 rounded-lg font-semibold">SQLAlchemy</span>
+                        </div>
+                    </div>
+                `
+            },
+            venus: {
+                name: '🟡 C++',
+                color: 0xffff00,
+                size: 1.8,
+                orbit: 22,
+                speed: 0.015,
+                desc: 'Advanced C++ & DSA',
+                theme: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+                content: `
+                    <div class="text-center mb-8">
+                        <div class="text-7xl mb-4">⚡</div>
+                        <h2 class="text-4xl font-bold text-yellow-400 mb-2">C++ MASTERY</h2>
+                        <p class="text-yellow-200">Advanced DSA, Algorithms & Systems Programming</p>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-black/30 rounded-xl p-6">
+                            <h3 class="text-xl font-bold text-white mb-4">📊 Data Structures</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-white font-semibold">Arrays & Linked Lists</span>
+                                        <span class="text-yellow-400 font-bold">95%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-700 rounded-full h-3">
+                                        <div class="bg-gradient-to-r from-yellow-500 to-yellow-400 h-3 rounded-full" style="width: 95%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-white font-semibold">Trees & Graphs</span>
+                                        <span class="text-yellow-400 font-bold">92%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-700 rounded-full h-3">
+                                        <div class="bg-gradient-to-r from-yellow-500 to-yellow-400 h-3 rounded-full" style="width: 92%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-white font-semibold">Hash Tables & Heaps</span>
+                                        <span class="text-yellow-400 font-bold">90%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-700 rounded-full h-3">
+                                        <div class="bg-gradient-to-r from-yellow-500 to-yellow-400 h-3 rounded-full" style="width: 90%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-black/30 rounded-xl p-6">
+                            <h3 class="text-xl font-bold text-white mb-4">🧮 Algorithms</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-white font-semibold">Sorting & Searching</span>
+                                        <span class="text-yellow-400 font-bold">93%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-700 rounded-full h-3">
+                                        <div class="bg-gradient-to-r from-yellow-500 to-yellow-400 h-3 rounded-full" style="width: 93%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-white font-semibold">Dynamic Programming</span>
+                                        <span class="text-yellow-400 font-bold">88%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-700 rounded-full h-3">
+                                        <div class="bg-gradient-to-r from-yellow-500 to-yellow-400 h-3 rounded-full" style="width: 88%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-white font-semibold">Graph Algorithms</span>
+                                        <span class="text-yellow-400 font-bold">90%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-700 rounded-full h-3">
+                                        <div class="bg-gradient-to-r from-yellow-500 to-yellow-400 h-3 rounded-full" style="width: 90%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-black/30 rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-3">🛠️ C++ Features & Tools</h3>
+                        <div class="flex flex-wrap gap-3">
+                            <span class="px-4 py-2 bg-yellow-600/30 text-yellow-200 rounded-lg font-semibold">STL</span>
+                            <span class="px-4 py-2 bg-yellow-600/30 text-yellow-200 rounded-lg font-semibold">OOP</span>
+                            <span class="px-4 py-2 bg-yellow-600/30 text-yellow-200 rounded-lg font-semibold">Templates</span>
+                            <span class="px-4 py-2 bg-yellow-600/30 text-yellow-200 rounded-lg font-semibold">Memory Management</span>
+                            <span class="px-4 py-2 bg-yellow-600/30 text-yellow-200 rounded-lg font-semibold">Multithreading</span>
+                            <span class="px-4 py-2 bg-yellow-600/30 text-yellow-200 rounded-lg font-semibold">C++17/20</span>
+                        </div>
+                    </div>
+                `
+            },
+            earth: {
+                name: 'MACHINE LEARNING',
+                color: 0x4444ff,
+                size: 2,
+                orbit: 30,
+                speed: 0.01,
+                desc: 'Deep Learning & Neural Networks',
+                theme: 'linear-gradient(135deg, #4444FF 0%, #1A1A80 100%)',
+                content: `
+                    <div class="text-center mb-8">
+                        <div class="text-7xl mb-4">🌍</div>
+                        <h2 class="text-4xl font-bold text-blue-400 mb-2">MACHINE LEARNING</h2>
+                        <p class="text-blue-200">Building Intelligent Systems & Neural Architectures</p>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div class="achievement-card rounded-xl p-6 shadow-xl">
+                            <h3 class="text-xl font-bold text-white mb-4">🔬 Focus Areas</h3>
+                            <ul class="space-y-4">
+                                <li class="flex items-start gap-3">
+                                    <span class="text-white text-xl font-bold">»</span>
+                                    <div>
+                                        <div class="text-white font-semibold">Computer Vision</div>
+                                        <div class="text-white/70 text-sm">Object detection, segmentation, and image processing</div>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="text-white text-xl font-bold">»</span>
+                                    <div>
+                                        <div class="text-white font-semibold">Deep Learning</div>
+                                        <div class="text-white/70 text-sm">CNNs, RNNs, and Transformers for complex patterns</div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="achievement-card rounded-xl p-6 shadow-xl">
+                            <h3 class="text-xl font-bold text-white mb-4">🛠️ Tech Stack</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-white">Neural Networks</span>
+                                        <span class="text-white">88%</span>
+                                    </div>
+                                    <div class="w-full bg-black/20 rounded-full h-2">
+                                        <div class="bg-white h-2 rounded-full shadow-[0_0_10px_white]" style="width: 88%"></div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap gap-2 pt-2">
+                                    <span class="px-3 py-1 bg-white/20 text-white rounded text-xs border border-white/30">Keras</span>
+                                    <span class="px-3 py-1 bg-white/20 text-white rounded text-xs border border-white/30">NLTK</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            mars: {
+                name: 'WEB DEVELOPMENT',
+                color: 0xff6644,
+                size: 1.6,
+                orbit: 38,
+                speed: 0.008,
+                desc: 'Modern Tech Stack',
+                theme: 'linear-gradient(135deg, #FF6644 0%, #8B0000 100%)',
+                content: `
+                    <div class="text-center mb-8">
+                        <div class="text-7xl mb-4">💻</div>
+                        <h2 class="text-4xl font-bold text-orange-400 mb-2">WEB DEVELOPMENT</h2>
+                        <p class="text-orange-200">Building High-Performance Digital Experiences</p>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="achievement-card rounded-xl p-6 shadow-xl">
+                            <h3 class="text-xl font-bold text-white mb-4">🎨 Frontend Excellence</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-black/20 p-4 rounded-lg hover:bg-black/40 transition border border-white/10">
+                                    <div class="text-2xl mb-1">⚛️</div>
+                                    <div class="text-white font-bold text-sm">React</div>
+                                </div>
+                                <div class="bg-black/20 p-4 rounded-lg hover:bg-black/40 transition border border-white/10">
+                                    <div class="text-2xl mb-1">▲</div>
+                                    <div class="text-white font-bold text-sm">Next.js</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="achievement-card rounded-xl p-6 shadow-xl">
+                            <h3 class="text-xl font-bold text-white mb-4">⚙️ Backend & Core</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between mb-1">
+                                        <span class="text-white/80 text-sm">Node.js</span>
+                                        <span class="text-white text-sm">75%</span>
+                                    </div>
+                                    <div class="w-full bg-black/20 h-1.5 rounded-full">
+                                        <div class="bg-white h-1.5 rounded-full shadow-[0_0_8px_white]" style="width: 75%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            jupiter: {
+                name: 'MAJOR PROJECTS',
+                color: 0xffa500,
+                size: 4,
+                orbit: 50,
+                speed: 0.005,
+                desc: 'Featured Portfolio',
+                theme: 'linear-gradient(135deg, #FF8C00 0%, #5D2E00 100%)',
+                content: `
+                    <div class="text-center mb-8">
+                        <div class="text-7xl mb-4">🚀</div>
+                        <h2 class="text-4xl font-bold text-orange-400 mb-2">MAJOR PROJECTS</h2>
+                        <p class="text-orange-200">A collection of my most impactful engineering work</p>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="achievement-card rounded-2xl p-6 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all group overflow-hidden relative">
+                            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <div class="text-6xl font-bold">01</div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-2">DSA Collection</h3>
+                            <p class="text-white/70 mb-4 font-mono text-sm leading-relaxed">A comprehensive repository of advanced data structures and algorithms implemented in C++, optimized for performance and space complexity.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-3 py-1 bg-white/20 text-white rounded text-[10px] font-bold uppercase tracking-wider">C++</span>
+                                <span class="px-3 py-1 bg-white/20 text-white rounded text-[10px] font-bold uppercase tracking-wider">Algorithms</span>
+                            </div>
+                        </div>
+                        <div class="achievement-card rounded-2xl p-6 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all group overflow-hidden relative">
+                            <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <div class="text-6xl font-bold">02</div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-2">ML Suite</h3>
+                            <p class="text-white/70 mb-4 font-mono text-sm leading-relaxed">End-to-end machine learning pipeline for real-world data processing, featuring neural network architectures and statistical validation.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-3 py-1 bg-white/20 text-white rounded text-[10px] font-bold uppercase tracking-wider">Python</span>
+                                <span class="px-3 py-1 bg-white/20 text-white rounded text-[10px] font-bold uppercase tracking-wider">TensorFlow</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 text-center">
+                        <a href="https://github.com/BPragun" target="_blank" class="inline-flex items-center gap-2 px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition transform hover:scale-105 shadow-lg">
+                            <span>Explore all on GitHub</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                        </a>
+                    </div>
+                `
+            },
+            saturn: {
+                name: 'PROFESSIONAL EXPERIENCE',
+                color: 0xffdd88,
+                size: 3.5,
+                orbit: 65,
+                speed: 0.003,
+                desc: 'Career Roadmap',
+                hasRings: true,
+                theme: 'linear-gradient(135deg, #FFDD88 0%, #8B6B00 100%)',
+                content: `
+                    <div class="text-center mb-8">
+                        <div class="text-7xl mb-4">🏆</div>
+                        <h2 class="text-4xl font-bold text-yellow-400 mb-2">EXPERIENCE</h2>
+                        <p class="text-yellow-100 italic">"The only source of knowledge is experience." — Albert Einstein</p>
+                    </div>
+                    <div class="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:w-0.5 before:-translate-x-px before:bg-white/10">
+                        <div class="relative flex items-center group">
+                            <div class="achievement-card flex items-center justify-center w-10 h-10 rounded-full border border-white/20 text-white shadow-2xl relative z-10">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+                            </div>
+                            <div class="achievement-card ml-6 w-full p-6 rounded-2xl shadow-xl">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h4 class="font-bold text-white text-lg">ML Engineer & Developer</h4>
+                                    <time class="bg-black/20 text-white text-xs px-2 py-1 rounded">2023 - Present</time>
+                                </div>
+                                <p class="text-white/70 text-sm font-mono leading-relaxed">Architecting intelligent systems and modern web applications with a focus on CV integration and scalability.</p>
+                            </div>
+                        </div>
+                        <div class="relative flex items-center group">
+                            <div class="achievement-card flex items-center justify-center w-10 h-10 rounded-full border border-white/20 text-white shadow-2xl relative z-10">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            </div>
+                            <div class="achievement-card ml-6 w-full p-6 rounded-2xl shadow-xl">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h4 class="font-bold text-white text-lg">Computer Vision Projects</h4>
+                                    <time class="bg-black/20 text-white text-xs px-2 py-1 rounded">2022 - 2023</time>
+                                </div>
+                                <p class="text-white/70 text-sm font-mono leading-relaxed">Developed real-time object detection systems and image processing pipelines using OpenCV and custom models.</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            uranus: {
+                name: 'COMPUTER VISION',
+                color: 0x44ddff,
+                size: 2.5,
+                orbit: 80,
+                speed: 0.002,
+                desc: 'Image Analysis & Processing',
+                theme: 'linear-gradient(135deg, #00BFFF 0%, #001F33 100%)',
+                content: `
+                    <div class="text-center mb-8">
+                        <div class="text-7xl mb-4">👁️</div>
+                        <h2 class="text-4xl font-bold text-cyan-400 mb-2">COMPUTER VISION</h2>
+                        <p class="text-cyan-200">Processing Visual Information with Machine Intelligence</p>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="achievement-card rounded-xl p-6 shadow-xl border border-white/10">
+                            <h3 class="text-xl font-bold text-white mb-4">🎯 Specialized Skills</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-white/80">Object Detection</span>
+                                    <span class="text-white font-bold">YOLO / SSD</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-white/80">Segmentation</span>
+                                    <span class="text-white font-bold">Mask R-CNN</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-white/80">OCR</span>
+                                    <span class="text-white font-bold">Tesseract</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="achievement-card rounded-xl p-6 shadow-xl border border-white/10">
+                            <h3 class="text-xl font-bold text-white mb-4">🖼️ Image Processing</h3>
+                            <p class="text-white/70 text-sm mb-4 font-mono">Advanced filtering, geometric transformations, and feature extraction.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-3 py-1 bg-white/20 text-white rounded text-[10px] font-bold uppercase">OpenCV</span>
+                                <span class="px-3 py-1 bg-white/20 text-white rounded text-[10px] font-bold uppercase">Pillow</span>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            neptune: {
+                name: 'CONTACT',
+                color: 0x4466ff,
+                size: 2.3,
+                orbit: 95,
+                speed: 0.001,
+                desc: 'Digital Footprint',
+                theme: 'linear-gradient(135deg, #0044FF 0%, #000033 100%)',
+                content: `
+                    <div class="text-center mb-8">
+                        <div class="text-7xl mb-4">🌐</div>
+                        <h2 class="text-4xl font-bold text-blue-400 mb-2">CONNECT</h2>
+                        <p class="text-blue-200">Let's build something exceptional together</p>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="achievement-card rounded-xl p-6 flex flex-col items-center justify-center hover:shadow-2xl transition shadow-lg">
+                            <div class="text-3xl mb-3">✉️</div>
+                            <h3 class="text-sm font-bold text-white uppercase tracking-widest mb-1">Email</h3>
+                            <a href="mailto:001nugarpking@gmail.com" class="text-white/80 hover:text-white text-xs font-mono break-all">001nugarpking@gmail.com</a>
+                        </div>
+                        <div class="achievement-card rounded-xl p-6 flex flex-col items-center justify-center hover:shadow-2xl transition shadow-lg">
+                            <div class="text-3xl mb-3">🐙</div>
+                            <h3 class="text-sm font-bold text-white uppercase tracking-widest mb-1">GitHub</h3>
+                            <a href="https://github.com/BPragun" target="_blank" class="text-white/80 hover:text-white text-xs font-mono">BPragun</a>
+                        </div>
+                        <div class="achievement-card rounded-xl p-6 flex flex-col items-center justify-center hover:shadow-2xl transition shadow-lg">
+                            <div class="text-3xl mb-3">📍</div>
+                            <h3 class="text-sm font-bold text-white uppercase tracking-widest mb-1">Location</h3>
+                            <span class="text-white/80 text-xs font-mono">Kathmandu, Nepal</span>
+                        </div>
+                        <div class="achievement-card rounded-xl p-6 flex flex-col items-center justify-center hover:shadow-2xl transition shadow-lg">
+                            <div class="text-3xl mb-3">🌐</div>
+                            <h3 class="text-sm font-bold text-white uppercase tracking-widest mb-1">Web</h3>
+                            <a href="https://pragunbhandari.com.np" target="_blank" class="text-white/80 hover:text-white text-xs font-mono">portfolio.site</a>
+                        </div>
+                    </div>
+                `
+            }
+        };
+        
+        init();
+        animate();
+        
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.0015);
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 50, 100);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 20;
+            controls.maxDistance = 200;
+            
+            // Raycaster for click detection
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambientLight);
+            
+            const sunLight = new THREE.PointLight(0xffffff, 2, 300);
+            scene.add(sunLight);
+            
+            // Create Stars
+            createStars();
+            createSpaceDust();
+            
+            // Create Sun
+            createSun();
+            
+            // Create Planets
+            createPlanets();
+            
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('click', onMouseClick);
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('keydown', onKeyDown);
+            
+            // Hide loading screen
+            setTimeout(() => {
+                document.getElementById('loadingBar').style.width = '100%';
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                }, 500);
+            }, 2000);
+        }
+        
+        function createCircleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+            gradient.addColorStop(0.5, 'rgba(255,255,255,0.2)');
+            gradient.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+        
+        function createStars() {
+            const starGeometry = new THREE.BufferGeometry();
+            const starMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 2.0,
+                transparent: true,
+                map: createCircleTexture(),
+                alphaTest: 0.001,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+            
+            const starVertices = [];
+            for (let i = 0; i < 50000; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+                const z = (Math.random() - 0.5) * 2000;
+                starVertices.push(x, y, z);
+            }
+            
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
+        }
+        
+        function createSpaceDust() {
+            const dustGeometry = new THREE.BufferGeometry();
+            const dustMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.8,
+                transparent: true,
+                opacity: 0.5,
+                map: createCircleTexture(),
+                alphaTest: 0.001,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+            
+            const dustVertices = [];
+            for (let i = 0; i < 15000; i++) {
+                const x = (Math.random() - 0.5) * 1000;
+                const y = (Math.random() - 0.5) * 1000;
+                const z = (Math.random() - 0.5) * 1000;
+                dustVertices.push(x, y, z);
+            }
+            dustGeometry.setAttribute('position', new THREE.Float32BufferAttribute(dustVertices, 3));
+            spaceDust = new THREE.Points(dustGeometry, dustMaterial);
+            scene.add(spaceDust);
+        }
+        
+        function createShootingStar() {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(6); // 2 points (x,y,z)
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const material = new THREE.LineBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const star = new THREE.Line(geometry, material);
+            const x = (Math.random() - 0.5) * 1000;
+            const y = (Math.random() - 0.5) * 500 + 200;
+            const z = (Math.random() - 0.5) * 1000;
+            
+            star.userData = {
+                pos: new THREE.Vector3(x, y, z),
+                vel: new THREE.Vector3(-2 - Math.random() * 3, -1 - Math.random() * 2, 0),
+                life: 1.0
+            };
+            
+            scene.add(star);
+            shootingStars.push(star);
+        }
+        
+        function createSun() {
+            const geometry = new THREE.SphereGeometry(planetData.sun.size, 32, 32);
+            const material = new THREE.MeshBasicMaterial({
+                color: planetData.sun.color,
+                emissive: planetData.sun.color,
+                emissiveIntensity: 1
+            });
+            
+            sun = new THREE.Mesh(geometry, material);
+            sun.userData = { type: 'sun', data: planetData.sun };
+            scene.add(sun);
+            
+            // Sun glow
+            const glowGeometry = new THREE.SphereGeometry(planetData.sun.size * 1.2, 32, 32);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffa500,
+                transparent: true,
+                opacity: 0.3
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            sun.add(glow);
+        }
+        
+        function createPlanets() {
+            const planetNames = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
+            
+            planetNames.forEach(name => {
+                const data = planetData[name];
+                const geometry = new THREE.SphereGeometry(data.size, 32, 32);
+                
+                let material;
+                const textureLoader = new THREE.TextureLoader();
+                
+                material = new THREE.MeshStandardMaterial({
+                    color: data.color,
+                    emissive: data.color,
+                    emissiveIntensity: 0.3
+                });
+                
+                const planet = new THREE.Mesh(geometry, material);
+                planet.userData = {
+                    type: 'planet',
+                    name: name,
+                    data: data,
+                    angle: Math.random() * Math.PI * 2,
+                    orbit: data.orbit,
+                    speed: data.speed
+                };
+                
+                scene.add(planet);
+                planets.push(planet);
+                
+                // Add rings to Saturn
+                if (data.hasRings) {
+                    const ringGeometry = new THREE.RingGeometry(data.size * 1.5, data.size * 2.5, 32);
+                    const ringMaterial = new THREE.MeshBasicMaterial({
+                        color: 0xffdd88,
+                        side: THREE.DoubleSide,
+                        transparent: true,
+                        opacity: 0.6
+                    });
+                    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                    ring.rotation.x = Math.PI / 2;
+                    planet.add(ring);
+                }
+                
+                // Add Atmosphere to Earth
+                if (name === 'earth') {
+                    const atmoGeom = new THREE.SphereGeometry(data.size * 1.05, 32, 32);
+                    const atmoMat = new THREE.MeshBasicMaterial({
+                        color: 0x4488ff,
+                        transparent: true,
+                        opacity: 0.15,
+                        side: THREE.BackSide
+                    });
+                    const atmo = new THREE.Mesh(atmoGeom, atmoMat);
+                    planet.add(atmo);
+                }
+                
+                // Add Atmosphere to other planets
+                if (['venus', 'mars', 'jupiter'].includes(name)) {
+                    const atmoColor = name === 'venus' ? 0xffcc88 : (name === 'mars' ? 0xff4422 : 0xffaa88);
+                    const atmoGeom = new THREE.SphereGeometry(data.size * 1.03, 32, 32);
+                    const atmoMat = new THREE.MeshBasicMaterial({
+                        color: atmoColor,
+                        transparent: true,
+                        opacity: 0.1,
+                        side: THREE.BackSide
+                    });
+                    const atmo = new THREE.Mesh(atmoGeom, atmoMat);
+                    planet.add(atmo);
+                }
+            });
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Rotate sun
+            if (sun) {
+                sun.rotation.y += 0.001;
+                // Subtle Sun Glow Flickering
+                const glow = sun.children[0];
+                if (glow) {
+                    glow.material.opacity = 0.2 + Math.random() * 0.15;
+                }
+            }
+            
+            // Star Twinkling
+            if (stars) {
+                stars.material.opacity = 0.7 + Math.sin(Date.now() * 0.002) * 0.3;
+            }
+            
+            // Space Dust Motion
+            if (spaceDust) {
+                spaceDust.rotation.y += 0.00005;
+            }
+            
+            // Shooting Stars (Roughly every 10-15 seconds)
+            if (Math.random() < 0.0015) createShootingStar();
+            shootingStars.forEach((star, index) => {
+                star.userData.life -= 0.02;
+                if (star.userData.life <= 0) {
+                    scene.remove(star);
+                    shootingStars.splice(index, 1);
+                } else {
+                    const { pos, vel } = star.userData;
+                    pos.add(vel);
+                    const positions = star.geometry.attributes.position.array;
+                    positions[0] = pos.x;
+                    positions[1] = pos.y;
+                    positions[2] = pos.z;
+                    positions[3] = pos.x + vel.x * 2;
+                    positions[4] = pos.y + vel.y * 2;
+                    positions[5] = pos.z + vel.z * 2;
+                    star.geometry.attributes.position.needsUpdate = true;
+                    star.material.opacity = star.userData.life;
+                }
+            });
+            
+            // Orbit planets
+            planets.forEach(planet => {
+                planet.userData.angle += planet.userData.speed;
+                planet.position.x = Math.cos(planet.userData.angle) * planet.userData.orbit;
+                planet.position.z = Math.sin(planet.userData.angle) * planet.userData.orbit;
+                planet.rotation.y += 0.01;
+            });
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects([sun, ...planets]);
+            
+            if (intersects.length > 0) {
+                const obj = intersects[0].object;
+                const data = obj.userData.data;
+                
+                document.getElementById('planetInfo').classList.remove('hidden');
+                document.getElementById('planetName').textContent = data.name;
+                document.getElementById('planetDesc').textContent = data.desc;
+                
+                document.body.style.cursor = 'pointer';
+            } else {
+                document.getElementById('planetInfo').classList.add('hidden');
+                document.body.style.cursor = 'default';
+            }
+        }
+        
+        function onMouseClick(event) {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects([sun, ...planets]);
+            
+            if (intersects.length > 0) {
+                const obj = intersects[0].object;
+                const data = obj.userData.data;
+                const pos = obj.position;
+                
+                // Camera transition
+                gsap.to(camera.position, {
+                    x: pos.x,
+                    y: pos.y + 10,
+                    z: pos.z + 25,
+                    duration: 1.5,
+                    ease: "power2.inOut"
+                });
+                
+                gsap.to(controls.target, {
+                    x: pos.x,
+                    y: pos.y,
+                    z: pos.z,
+                    duration: 1.5,
+                    ease: "power2.inOut",
+                    onComplete: () => {
+                        openModal(data);
+                    }
+                });
+            }
+        }
+        
+        function openModal(data) {
+            const modal = document.getElementById('modal');
+            const modalCard = document.getElementById('modalCard');
+            const uiOverlays = document.querySelectorAll('.ui-overlay');
+            
+            // Set theme variable for achievement cards
+            document.documentElement.style.setProperty('--theme-gradient', data.theme || 'rgba(255, 255, 255, 0.1)');
+            
+            // Set content
+            document.getElementById('modalContent').innerHTML = data.content;
+            
+            // Hide UI overlays
+            uiOverlays.forEach(overlay => overlay.style.opacity = '0');
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            modal.style.opacity = '1';
+            
+            // Animate card in
+            setTimeout(() => {
+                modalCard.style.transform = 'scale(1)';
+                modalCard.style.opacity = '1';
+            }, 50);
+            
+            // Disable orbit controls
+            controls.enabled = false;
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            const modalCard = document.getElementById('modalCard');
+            const uiOverlays = document.querySelectorAll('.ui-overlay');
+            
+            // Animate out
+            modalCard.style.transform = 'scale(0.95)';
+            modalCard.style.opacity = '0';
+            modal.style.opacity = '0';
+            
+            // Show UI overlays
+            uiOverlays.forEach(overlay => overlay.style.opacity = '1');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                
+                // Camera transition back
+                gsap.to(camera.position, {
+                    x: 0,
+                    y: 50,
+                    z: 100,
+                    duration: 1.2,
+                    ease: "power2.inOut"
+                });
+                
+                gsap.to(controls.target, {
+                    x: 0,
+                    y: 0,
+                    z: 0,
+                    duration: 1.2,
+                    ease: "power2.inOut"
+                });
+            }, 300);
+            
+            // Re-enable orbit controls
+            controls.enabled = true;
+        }
+        
+        function onKeyDown(event) {
+            // Close modal with ESC
+            if (event.code === 'Escape') {
+                const modal = document.getElementById('modal');
+                if (!modal.classList.contains('hidden')) {
+                    closeModal();
+                    return;
+                }
+            }
+            
+            // Reset camera with SPACE
+            if (event.code === 'Space') {
+                const modal = document.getElementById('modal');
+                if (modal.classList.contains('hidden')) {
+                    camera.position.set(0, 50, 100);
+                    controls.target.set(0, 0, 0);
+                }
+            }
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Update loading bar
+        let progress = 0;
+        const loadingInterval = setInterval(() => {
+            progress += Math.random() * 25;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(loadingInterval);
+                
+                // Finalize loading
+                setTimeout(() => {
+                    const loading = document.getElementById('loading');
+                    loading.style.opacity = '0';
+                    setTimeout(() => {
+                        loading.style.display = 'none';
+                    }, 1000);
+                }, 500);
+            }
+            document.getElementById('loadingBar').style.width = progress + '%';
+            document.getElementById('loadingPercent').textContent = Math.floor(progress) + '%';
+        }, 150);
+    </script>
+</body>
+</html>
