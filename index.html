@@ -798,8 +798,8 @@
             
             // Event Listeners
             window.addEventListener('resize', onWindowResize);
-            window.addEventListener('click', onMouseClick);
-            window.addEventListener('touchstart', onMouseClick, { passive: false });
+            window.addEventListener('pointerdown', onPointerDown);
+            window.addEventListener('pointerup', onPointerUp);
             window.addEventListener('mousemove', onMouseMove);
             window.addEventListener('keydown', onKeyDown);
             
@@ -1089,35 +1089,64 @@
             mouse.y = -(clientY / window.innerHeight) * 2 + 1;
         }
         
+        let pointerDownTime = 0;
+        let pointerDownPos = { x: 0, y: 0 };
+        
+        function onPointerDown(event) {
+            pointerDownTime = Date.now();
+            pointerDownPos = { x: event.clientX, y: event.clientY };
+        }
+        
+        function onPointerUp(event) {
+            const duration = Date.now() - pointerDownTime;
+            const moveDist = Math.sqrt(
+                Math.pow(event.clientX - pointerDownPos.x, 2) + 
+                Math.pow(event.clientY - pointerDownPos.y, 2)
+            );
+            
+            // If it was a short tap (less than 300ms) and didn't move much (drag)
+            if (duration < 300 && moveDist < 10) {
+                onMouseClick(event);
+            }
+        }
+        
         function onMouseClick(event) {
             updateMouseCoordinates(event);
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects([sun, ...planets]);
+            // Use recursive: true to hit children like rings or atmosphere
+            const intersects = raycaster.intersectObjects([sun, ...planets], true);
             
             if (intersects.length > 0) {
-                const obj = intersects[0].object;
-                const data = obj.userData.data;
-                const pos = obj.position;
+                // Find the first parent that has planet data
+                let obj = intersects[0].object;
+                while (obj && !obj.userData.data) {
+                    obj = obj.parent;
+                }
                 
-                // Camera transition
-                gsap.to(camera.position, {
-                    x: pos.x,
-                    y: pos.y + 10,
-                    z: pos.z + 25,
-                    duration: 1.5,
-                    ease: "power2.inOut"
-                });
-                
-                gsap.to(controls.target, {
-                    x: pos.x,
-                    y: pos.y,
-                    z: pos.z,
-                    duration: 1.5,
-                    ease: "power2.inOut",
-                    onComplete: () => {
-                        openModal(data);
-                    }
-                });
+                if (obj) {
+                    const data = obj.userData.data;
+                    const pos = obj.position;
+                    
+                    // Camera transition
+                    gsap.to(camera.position, {
+                        x: pos.x,
+                        y: pos.y + 10,
+                        z: pos.z + 25,
+                        duration: 1.5,
+                        ease: "power2.inOut"
+                    });
+                    
+                    gsap.to(controls.target, {
+                        x: pos.x,
+                        y: pos.y,
+                        z: pos.z,
+                        duration: 1.5,
+                        ease: "power2.inOut",
+                        onComplete: () => {
+                            openModal(data);
+                        }
+                    });
+                }
             }
         }
         
@@ -1225,6 +1254,7 @@
                 setTimeout(() => {
                     const loading = document.getElementById('loading');
                     loading.style.opacity = '0';
+                    loading.style.pointerEvents = 'none'; // Ensure it doesn't block clicks during transition
                     setTimeout(() => {
                         loading.style.display = 'none';
                     }, 1000);
