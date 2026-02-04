@@ -151,6 +151,27 @@
             z-index: -1;
             background: black;
         }
+        /* Permanent labels */
+        .permanent-label {
+            position: fixed;
+            pointer-events: none;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            white-space: nowrap;
+            z-index: 30;
+            transform: translate(-50%, -50%);
+            display: none;
+            transition: opacity 0.3s;
+        }
     </style>
     
     <!-- GSAP for smooth animations -->
@@ -166,6 +187,7 @@
     
     <!-- Canvas Container -->
     <div id="canvas-container"></div>
+    <div id="labels-container"></div>
     
     <!-- Loading Screen -->
     <div id="loading" class="fixed inset-0 bg-black flex items-center justify-center z-50 transition-opacity duration-1000">
@@ -506,8 +528,8 @@
                                 <li class="flex items-start gap-3">
                                     <span class="text-white text-xl font-bold">»</span>
                                     <div>
-                                        <div class="text-white font-semibold">Deep Learning</div>
-                                        <div class="text-white/70 text-sm">CNNs, RNNs, and Transformers for complex patterns</div>
+                                        <div class="text-white font-semibold">Deep Learning & GANs</div>
+                                        <div class="text-white/70 text-sm">CNNs, RNNs, and Generative Adversarial Networks (DCGAN, CycleGAN)</div>
                                     </div>
                                 </li>
                             </ul>
@@ -527,6 +549,7 @@
                                 <div class="flex flex-wrap gap-2 pt-2">
                                     <span class="px-3 py-1 bg-white/20 text-white rounded text-xs border border-white/30">Keras</span>
                                     <span class="px-3 py-1 bg-white/20 text-white rounded text-xs border border-white/30">NLTK</span>
+                                    <span class="px-3 py-1 bg-white/20 text-white rounded text-xs border border-white/30">PyTorch</span>
                                 </div>
                             </div>
                         </div>
@@ -915,6 +938,9 @@
             sun.userData = { type: 'sun', data: planetData.sun };
             scene.add(sun);
             
+            // Create Sun Label
+            createLabel(sun, 'PRAGUN');
+            
             // Sun glow
             const glowGeometry = new THREE.SphereGeometry(planetData.sun.size * 1.2, 32, 32);
             const glowMaterial = new THREE.MeshBasicMaterial({
@@ -995,7 +1021,55 @@
                     const atmo = new THREE.Mesh(atmoGeom, atmoMat);
                     planet.add(atmo);
                 }
+                
+                // Create Label
+                const labelText = data.name.split(' ').slice(-1)[0]; // Fallback to last word
+                const cleanLabel = name === 'mercury' ? 'PYTHON' : 
+                                  (name === 'venus' ? 'C++' : 
+                                  (name === 'earth' ? 'ML' : 
+                                  (name === 'mars' ? 'WEB' : 
+                                  (name === 'jupiter' ? 'PROJECTS' : 
+                                  (name === 'saturn' ? 'EXPERIENCE' : 
+                                  (name === 'uranus' ? 'CV' : 
+                                  (name === 'neptune' ? 'CONTACT' : labelText)))))));
+                
+                createLabel(planet, cleanLabel);
             });
+        }
+        
+        function createLabel(mesh, text) {
+            const label = document.createElement('div');
+            label.className = 'permanent-label';
+            label.textContent = text;
+            document.getElementById('labels-container').appendChild(label);
+            mesh.userData.label = label;
+        }
+        
+        function updateLabelPosition(mesh) {
+            if (!mesh.userData.label) return;
+            
+            const vector = new THREE.Vector3();
+            mesh.getWorldPosition(vector);
+            vector.project(camera);
+            
+            const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+            
+            const label = mesh.userData.label;
+            
+            // Only show if in front of camera
+            if (vector.z < 1.0) {
+                label.style.display = 'block';
+                label.style.left = `${x}px`;
+                label.style.top = `${y - (mesh.userData.data.size * 2 + 10)}px`;
+                
+                // Fade out based on distance
+                const distance = camera.position.distanceTo(mesh.position);
+                const opacity = Math.min(1, 400 / distance);
+                label.style.opacity = opacity;
+            } else {
+                label.style.display = 'none';
+            }
         }
         
         function animate() {
@@ -1049,7 +1123,12 @@
                 planet.position.x = Math.cos(planet.userData.angle) * planet.userData.orbit;
                 planet.position.z = Math.sin(planet.userData.angle) * planet.userData.orbit;
                 planet.rotation.y += 0.01;
+                
+                // Update Label Position
+                updateLabelPosition(planet);
             });
+            
+            if (sun) updateLabelPosition(sun);
             
             controls.update();
             renderer.render(scene, camera);
