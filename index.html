@@ -3,7 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pragun's Universe - Interactive Portfolio</title>
+    <title>Pragun Bhandari</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Hi I am Pragun Bhandari and this is a space where I showcase my interests and the things I've built, while trying to be the better version of myself everyday.">
+    <meta name="keywords" content="Pragun Bhandari, Pragun, Portfolio, Computer Engineer, AI Enthusiast, Full Stack Developer, 3D Portfolio, Three.js, Web Development">
+    <meta name="author" content="Pragun Bhandari">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pragunbhandari.com.np/">
+    <meta property="og:title" content="Pragun's Portfolio Universe">
+    <meta property="og:description" content="Interactive 3D space-themed portfolio of Pragun Bhandari.">
+    <meta property="og:image" content="https://pragunbhandari.com.np/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://pragunbhandari.com.np/">
+    <meta property="twitter:title" content="Pragun's Portfolio Universe">
+    <meta property="twitter:description" content="Interactive 3D space-themed portfolio of Pragun Bhandari.">
+    <meta property="twitter:image" content="https://pragunbhandari.com.np/og-image.png">
     
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -71,6 +91,93 @@
             opacity: 1;
         }
         
+        /* Typing Animation Cursor */
+        .typing-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background-color: #3b82f6;
+            margin-left: 2px;
+            vertical-align: middle;
+            animation: blink 0.8s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Envelope Animation */
+        .envelope-wrapper {
+            position: relative;
+            width: 60px;
+            height: 40px;
+            background: #2563eb;
+            border-radius: 4px;
+            margin-bottom: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .envelope-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-left: 30px solid transparent;
+            border-right: 30px solid transparent;
+            border-top: 25px solid #3b82f6;
+            z-index: 2;
+            transition: all 0.4s ease;
+            transform-origin: top;
+        }
+
+        .envelope-wrapper::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-left: 30px solid #1d4ed8;
+            border-right: 30px solid #1d4ed8;
+            border-bottom: 20px solid #1e40af;
+            border-top: 20px solid transparent;
+            z-index: 1;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .letter {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 45px;
+            height: 30px;
+            background: #fff;
+            z-index: 1;
+            transition: all 0.4s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+        }
+
+        .group:hover .envelope-wrapper::before {
+            transform: rotateX(180deg);
+            z-index: 0;
+        }
+
+        .group:hover .letter {
+            transform: translate(-50%, -25px);
+            z-index: 2;
+        }
+
+        .group:hover .envelope-wrapper {
+            transform: translateY(10px);
+        }
+
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
@@ -214,7 +321,7 @@
             <div class="flex justify-between items-center">
                 <div>
                     <h1 class="text-2xl font-bold text-white glow-text">PRAGUN BHANDARI</h1>
-                    <p class="text-sm text-gray-400">Computer Engineer & ML/AI Enthusiast</p>
+                    <p class="text-sm text-gray-400 font-mono tracking-wider"><span id="typing-text" class="text-blue-400"></span><span class="typing-cursor"></span></p>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="hidden md:block glass px-4 py-2 rounded-lg">
@@ -226,11 +333,11 @@
                                 <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                             </svg>
                         </a>
-                        <a href="mailto:001nugarpking@gmail.com" class="text-white hover:text-blue-400 transition-colors" title="Email">
+                        <button onclick="openContactFormHeader()" class="text-white hover:text-blue-400 transition-colors cursor-pointer" title="Send Suggestion">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                             </svg>
-                        </a>
+                        </button>
                         <a href="https://pragunbhandari.com.np" target="_blank" class="text-white hover:text-blue-400 transition-colors" title="Website">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
@@ -748,10 +855,16 @@
                         <p class="text-blue-200">Let's build something exceptional together</p>
                     </div>
                     <div class="grid md:grid-cols-2 gap-4">
-                        <div class="achievement-card rounded-xl p-6 flex flex-col items-center justify-center hover:shadow-2xl transition shadow-lg">
-                            <div class="text-3xl mb-3">✉️</div>
-                            <h3 class="text-sm font-bold text-white uppercase tracking-widest mb-1">Email</h3>
-                            <a href="mailto:001nugarpking@gmail.com" class="text-white/80 hover:text-white text-xs font-mono break-all">001nugarpking@gmail.com</a>
+                        <div onclick="showContactForm()" class="achievement-card rounded-xl p-6 flex flex-col items-center justify-center hover:shadow-2xl transition shadow-lg cursor-pointer group">
+                            <div class="envelope-wrapper">
+                                <div class="letter">
+                                    <div class="w-6 h-[1px] bg-blue-100 mb-1"></div>
+                                    <div class="w-4 h-[1px] bg-blue-100"></div>
+                                </div>
+                            </div>
+                            <h3 class="text-sm font-bold text-white uppercase tracking-widest mb-1">Email / Suggestions</h3>
+                            <span class="text-white/80 hover:text-white text-xs font-mono break-all text-center">Click to send a suggestion</span>
+                            <span class="text-[10px] text-blue-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Launch Form →</span>
                         </div>
                         <div class="achievement-card rounded-xl p-6 flex flex-col items-center justify-center hover:shadow-2xl transition shadow-lg">
                             <div class="text-3xl mb-3">🐙</div>
@@ -1342,6 +1455,149 @@
             document.getElementById('loadingBar').style.width = progress + '%';
             document.getElementById('loadingPercent').textContent = Math.floor(progress) + '%';
         }, 150);
+
+        // Typing Animation Logic
+        const typingTextElement = document.getElementById('typing-text');
+        const words = [
+            "Computer Engineer & AI Enthusiast",
+            "Full Stack Developer & Problem Solver",
+            "ML Engineer & Tech Innovator",
+            "Software Architect & Data Explorer"
+        ];
+        let wordIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        let typeSpeed = 100;
+
+        function type() {
+            const currentWord = words[wordIndex];
+            
+            if (isDeleting) {
+                typingTextElement.textContent = currentWord.substring(0, charIndex - 1);
+                charIndex--;
+                typeSpeed = 40;
+            } else {
+                typingTextElement.textContent = currentWord.substring(0, charIndex + 1);
+                charIndex++;
+                typeSpeed = 80;
+            }
+
+            if (!isDeleting && charIndex === currentWord.length) {
+                isDeleting = true;
+                typeSpeed = 2500; // Longer pause for full sentence
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                wordIndex = (wordIndex + 1) % words.length;
+                typeSpeed = 400;
+            }
+
+            setTimeout(type, typeSpeed);
+        }
+
+        // Initialize typing animation after loading
+        window.addEventListener('load', () => {
+            setTimeout(type, 2500); // Start after initial loading delay
+        });
+
+        // Contact Form Logic
+        function openContactFormHeader() {
+            // Open modal using Neptune's theme but jump straight to form
+            openModal(planetData.neptune);
+            showContactForm();
+        }
+
+        function showContactForm() {
+            const modalContent = document.getElementById('modalContent');
+            
+            // Store original content for back button functionality
+            const originalContent = modalContent.innerHTML;
+            
+            const formHtml = `
+                <div class="max-w-xl mx-auto">
+                    <div class="flex items-center gap-4 mb-8">
+                        <button onclick="backToContact()" class="p-2 hover:bg-white/10 rounded-full transition">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                        </button>
+                        <h2 class="text-4xl font-bold text-blue-400">SEND SUGGESTION</h2>
+                    </div>
+                    
+                    <form id="suggestionForm" onsubmit="submitForm(event)" class="space-y-6">
+                        <div class="group">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-focus-within:text-blue-400 transition">Your Name</label>
+                            <input type="text" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400/50 transition font-mono" placeholder="Enter your name">
+                        </div>
+                        
+                        <div class="group">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-focus-within:text-blue-400 transition">Email Address</label>
+                            <input type="email" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400/50 transition font-mono" placeholder="your@email.com">
+                        </div>
+                        
+                        <div class="group">
+                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-focus-within:text-blue-400 transition">Suggestion / Message</label>
+                            <textarea required rows="4" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-400/50 transition font-mono" placeholder="What's on your mind?"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition transform hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.3)] flex items-center justify-center gap-2">
+                            <span>Send Transmission</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                        </button>
+                    </form>
+                </div>
+            `;
+            
+            gsap.to(modalContent, {
+                opacity: 0,
+                duration: 0.3,
+                onComplete: () => {
+                    modalContent.innerHTML = formHtml;
+                    gsap.to(modalContent, { opacity: 1, duration: 0.3 });
+                }
+            });
+        }
+
+        function backToContact() {
+            const data = planetData.neptune;
+            const modalContent = document.getElementById('modalContent');
+            
+            gsap.to(modalContent, {
+                opacity: 0,
+                duration: 0.3,
+                onComplete: () => {
+                    modalContent.innerHTML = data.content;
+                    gsap.to(modalContent, { opacity: 1, duration: 0.3 });
+                }
+            });
+        }
+
+        function submitForm(event) {
+            event.preventDefault();
+            const btn = event.target.querySelector('button[type="submit"]');
+            const originalBtnHtml = btn.innerHTML;
+            
+            // Animation for submission
+            btn.disabled = true;
+            btn.innerHTML = `<span>Transmitting...</span><div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>`;
+            
+            setTimeout(() => {
+                const modalContent = document.getElementById('modalContent');
+                gsap.to(modalContent, {
+                    scale: 0.9,
+                    opacity: 0,
+                    duration: 0.4,
+                    onComplete: () => {
+                        modalContent.innerHTML = `
+                            <div class="text-center py-20">
+                                <div class="text-6xl mb-6">🚀</div>
+                                <h2 class="text-4xl font-bold text-blue-400 mb-4">TRANSMISSION RECEIVED</h2>
+                                <p class="text-gray-400 mb-8 font-mono">Your suggestion has been added to my database. Thank you for connecting!</p>
+                                <button onclick="closeModal()" class="px-8 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition">Return to Universe</button>
+                            </div>
+                        `;
+                        gsap.to(modalContent, { scale: 1, opacity: 1, duration: 0.4 });
+                    }
+                });
+            }, 1500);
+        }
     </script>
 </body>
 </html>

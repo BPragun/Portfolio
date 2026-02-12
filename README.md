@@ -1,14 +1,14 @@
-# Pragun's Universe - Interactive Portfolio
+# Pragun Bhandari - Interactive Portfolio
 
-A stunning, interactive 3D solar system portfolio built with **Three.js**, **GSAP**, and **Tailwind CSS**. This project showcases my skills, experience, and projects in a visually immersive space environment.
+A stunning, interactive 3D solar system portfolio built with **Three.js**, **GSAP**, and **Tailwind CSS**. This project showcases the skills, interests, and projects of Pragun Bhandari in a visually immersive space environment.
 
 ## 🚀 Features
 
-- **Interactive 3D Scene**: Navigate through a celestial representation of my professional universe.
-- **Dynamic Labels**: All celestial bodies are labeled with their respective categories (Python, ML, Projects, etc.).
-- **Immersive Content**: Click on planets to explore detailed information about my expertise and achievements.
-- **Responsive Design**: Optimized for both desktop and mobile viewing.
-- **Rich Aesthetics**: Features custom shaders, starfields, space dust, and smooth animations.
+- **Dynamic Typing Animation**: A sleek header subtitle that cycles through different roles and expertise.
+- **Interactive 3D Universe**: Navigate through a celestial representation of my professional journey using Three.js.
+- **Elegant Contact Form**: A custom suggestion form with an animated envelope micro-interaction and smooth GSAP transitions.
+- **SEO Optimized**: Configured for maximum visibility on search engines for "Pragun Bhandari".
+- **Responsive Design**: Optimized for both desktop and mobile viewing with tailwind-powered UI overlays.
 
 ## 🛠️ Tech Stack
 
