@@ -1591,10 +1591,23 @@
             const btn = form.querySelector('button[type="submit"]');
             const originalBtnHtml = btn.innerHTML;
             
+            const email = form.email.value;
+            const messageField = form.message;
+
+            // Gmail validation
+            if (!email.toLowerCase().endsWith('@gmail.com')) {
+                alert("Invalid email. Only @gmail.com addresses are accepted for transmission.");
+                return;
+            }
+
             // Animation for submission
             btn.disabled = true;
             btn.innerHTML = `<span>Transmitting...</span><div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>`;
-            
+
+            // Append email to message content
+            const originalMessage = messageField.value;
+            messageField.value = `${originalMessage}\n\n[Sender Email: ${email}]`;
+
             // Set current time for the template
             const timeField = document.getElementById('form-time');
             if (timeField) {
