@@ -1650,31 +1650,27 @@
             const form = event.target;
             const btn = form.querySelector('button[type="submit"]');
             const originalBtnHtml = btn.innerHTML;
-            
-            const email = form.email.value;
-            const messageField = form.message;
+
+            const name    = document.getElementById('form-name').value.trim();
+            const email   = document.getElementById('form-email').value.trim();
+            const message = document.getElementById('form-msg').value.trim();
+            const time    = new Date().toLocaleString();
 
             // Animation for submission
             btn.disabled = true;
             btn.innerHTML = `<span>Transmitting...</span><div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>`;
 
-            // Append email to message content
-            const originalMessage = messageField.value;
-            messageField.value = `${originalMessage}\n\n[Sender Email: ${email}]`;
-
-            // Set current time for the template
-            const timeField = document.getElementById('form-time');
-            if (timeField) {
-                timeField.value = new Date().toLocaleString();
-            }
-
             try {
-                // EmailJS sendForm method
-                // Parameters: (service_id, template_id, form_element)
-                const response = await emailjs.sendForm(
-                    'service_8018epd', 
-                    'template_y2rbvzs', 
-                    form
+                // Use emailjs.send() with explicit params — more reliable than sendForm()
+                const response = await emailjs.send(
+                    'service_8018epd',
+                    'template_y2rbvzs',
+                    {
+                        name:    name,
+                        email:   email,
+                        message: message,
+                        time:    time
+                    }
                 );
 
                 if (response.status === 200) {
@@ -1696,11 +1692,11 @@
                         }
                     });
                 } else {
-                    throw new Error('Transmission failed');
+                    throw new Error('Transmission failed with status: ' + response.status);
                 }
             } catch (error) {
                 console.error('EmailJS Error:', error);
-                alert("Transmission failed. Please check your EmailJS configuration or try again later.");
+                alert('Transmission failed: ' + (error.text || error.message || 'Unknown error. Check console for details.'));
                 btn.disabled = false;
                 btn.innerHTML = originalBtnHtml;
             }
